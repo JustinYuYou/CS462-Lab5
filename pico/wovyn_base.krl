@@ -5,12 +5,11 @@ ruleset wovyn_base {
             sid = meta:rulesetConfig{"sid"}
             authToken = meta:rulesetConfig{"authToken"}
             fromNumber = "+18305803542"
-            toNumber = "+13853849981"
+      use module sensor_profile
       shares message
    }
 
    global {
-      temperature_threshold = 20
       message = function() {
          twilio:message()
       }
@@ -34,12 +33,12 @@ ruleset wovyn_base {
       always {
          raise wovyn event "threshold_violation"
             attributes event:attrs
-            if event:attrs >< "temperature" && event:attrs{"temperature"} > temperature_threshold
+            if event:attrs >< "temperature" && event:attrs{"temperature"} > sensor_profile:threshold()
       }
    }
 
    rule threshold_notification {
       select when wovyn threshold_violation
-      twilio:sendMessage()
+      twilio:sendMessage(sensor_profile:sms_number())
    }
 }

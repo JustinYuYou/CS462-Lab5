@@ -1,15 +1,16 @@
 ruleset sensor_profile {
    meta {
       shares sensor_location, sensor_name, threshold, sms_number
+      provides sensor_location, sensor_name, threshold, sms_number
    }
    
    global {
       sensor_location = function() {
-         event:sensor_location
+         ent:sensor_location
       }
 
       sensor_name = function() {
-         event:sensor_name
+         ent:sensor_name
       }
 
       threshold = function() {
@@ -22,7 +23,7 @@ ruleset sensor_profile {
    }
 
    rule intialization {
-      select when wrangler ruleset_installed where event:attr("rids") >< meta:rid
+      select when wrangler ruleset_installed where event:attrs{"rids"} >< meta:rid
       fired {
          ent:sensor_name := ""
          ent:sensor_location := ""

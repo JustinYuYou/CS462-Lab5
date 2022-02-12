@@ -3,7 +3,6 @@ ruleset twilio {
      configure using
        sid = ""
        authToken = ""
-       toNumber = ""
        fromNumber = ""
      provides sendMessage, message
    }
@@ -11,7 +10,7 @@ ruleset twilio {
    global {
       baseUrl = "https://api.twilio.com/2010-04-01"
       pageSize = 5
-      sendMessage = defaction() {
+      sendMessage = defaction(toNumber) {
          http:post(<<#{baseUrl}/Accounts/#{sid}/Messages.json>>, form={"To": toNumber, "From": fromNumber, "Body":"this is a test message"}, auth={"username": sid, "password": authToken}) 
          setting (output)
          return output.klog()

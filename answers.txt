@@ -1,0 +1,11 @@
+What design decisions did you make in your rulesets that made this assignment easier or harder? Why?
+I change the wovyn_base ruleset to directly get values from sensor_profile. By doing so, I am able to have a single place to store all of the tracked and changable values
+
+Explain how the sensor_profile ruleset isolates state and processes regarding the sensor profile from other rulesets. 
+The state is isolated within sensor_profile and no other action outsied ruleset can change it
+
+How do other rulesets use the sensor_profile to get data?
+Other rulesets are using sensor_profile as a module to get the data from it
+
+Could they use it to store new values? How?
+Yes, we can use sensor_profile to store values. We just need to add that entity variable to store it
