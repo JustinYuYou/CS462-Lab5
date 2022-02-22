@@ -5,6 +5,9 @@ ruleset temperature_store {
    }
    
    global {
+      current_temp = function() {
+         ent:temperatures[0]
+      }
       temperatures = function() {
          ent:temperatures
       }
