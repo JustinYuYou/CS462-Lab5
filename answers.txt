@@ -1,4 +1,11 @@
 How did your rule that creates the sensor pico install rules in the new child pico? 
+It raises the new_child_request event in the postlude and when new_child_created is received, it will install rulesets in the child pico
+
 How did you ensure that your sensor picos were created before sending them the event telling them their profile was updated? 
+We need to create the new pico with channel first, and then we can use that channel to update it.
+
 How did you create a test harness for your pico system?
-In this set up, the picos representing sensors don't need to talk to each other and the sensor management pico is the parent, so it has channels to each child. How could you provide channels between sensor picos if sensor-to-sensor interaction were necessary? 
+I wrote a python script to call the apis to the pico and I checked if the operations(create child, delete child, and update profile ) do what is expected.
+
+In this set up, the picos representing sensors don't need to talk to each other and the sensor management pico is the parent, so it has channels to each child. How could you provide channels between sensor picos if sensor-to-sensor interaction were necessary?
+I can write a rule to give the channel between children

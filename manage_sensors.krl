@@ -12,7 +12,7 @@ ruleset manage_sensors {
       all_sensors_temperatures = function() {
          ent:sensors.map(function(v, k){
             eci = v{"eci"}
-            wrangler:picoQuery(eci,"temperature_store","current_temp");
+            wrangler:picoQuery(eci,"temperature_store","temperatures");
          })
       }
    }
@@ -68,9 +68,29 @@ ruleset manage_sensors {
 
    rule update_profile {
       select when sensor profile_updated
-      // event:send(
+      pre {
+         eci = event:attr("eci")
+         sensor_name = event:attr("sensor_name")
+         threshold = event:attr("threshold")
+         sms_number = event:attr("sms_number")
 
-      // )
+      }
+
+      event:send(
+         { 
+            "eci": eci, 
+            "eid": "update-profile",
+            "domain": "wrangler", 
+            "type": "profile_updated",
+            "attrs": {
+              "absoluteURL": meta:rulesetURI,
+              "rid": rs,
+              "sensor_name": sensor_name,
+              "threshold": threshold,
+              "sms_number": sms_number
+            }
+          }
+      )
    }
 
    rule delete_sensor {
