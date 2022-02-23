@@ -1,6 +1,6 @@
 ruleset manage_sensors {
    meta {
-      shares creat_sensor, sensors
+      shares sensors
       use module io.picolabs.wrangler alias wrangler
    }
 
@@ -8,6 +8,7 @@ ruleset manage_sensors {
       sensors = function() {
          ent:sensors
       }
+
       all_sensors_temperatures = function() {
          ent:sensors.map(function(v, k){
             eci = v{"eci"}
@@ -23,16 +24,28 @@ ruleset manage_sensors {
       }
    }
 
-   rule creat_sensor {
+   rule create_sensor {
       select when sensor new_sensor
-         foreach ["temperature_store","wovyn_base","sensor_profile","io.picolabs.wovyn.emitter"]
-      
       pre {
          sensor_name = event:attr("sensor_name")
+      }
+      
+      always {
+         raise wrangler event "new_child_request"
+            attributes { "name": sensor_name, "backgroundColor": "#ff69b4" }
+      }
+   }
+
+   rule create_child {
+      select when wrangler new_child_created
+         foreach ["temperature_store","wovyn_base","sensor_profile","io.picolabs.wovyn.emitter"] setting(rs)
+      
+      pre {
+         sensor_name = event:attr("name")
          eci = event:attr("eci")
       }
 
-      if not sensor_name >< sensor_names then
+      if not sensor_name >< ent:sensors then
          event:send(
             { 
               "eci": eci, 
@@ -41,43 +54,39 @@ ruleset manage_sensors {
               "type": "install_ruleset_request",
               "attrs": {
                 "absoluteURL": meta:rulesetURI,
-                "rid": "manage_sensors",
-                "sensor_name": sensor_name
+                "rid": rs,
               }
             }
          )
       
       fired {
-         raise wrangler event "new_child_request"
-            attributes { "name": sensor_name, "backgroundColor": "#ff69b4" }
-        
          ent:sensors{sensor_name} := { 
             "eci": eci
-         }
+         } on final
       }
    }
 
    rule update_profile {
       select when sensor profile_updated
-      event:send(
+      // event:send(
 
-      )
+      // )
    }
 
    rule delete_sensor {
       select when sensor unneeded_sensor
       pre{
-         sensor_name = event:attr{"sensor_name"}
+         deleted_sensor_name = event:attr{"sensor_name"}
          exists = ent:sensors >< deleted_sensor_name 
-         eci_to_delete = ent:sensors{[sensor_name,"eci"]}
+         eci_to_delete = ent:sensors{[deleted_sensor_name,"eci"]}
       }
       if exists && eci_to_delete then
-        send_directive("deleting_sensor", {"sensor_name":sensor_name})
+        send_directive("deleting_sensor", {"sensor_name":deleted_sensor_name})
       
       fired {
         raise wrangler event "child_deletion_request"
           attributes {"eci": eci_to_delete};
-        clear ent:sensors{sensor_name}
+        clear ent:sensors{deleted_sensor_name}
       }
    }
 }
