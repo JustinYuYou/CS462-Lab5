@@ -1,6 +1,6 @@
 ruleset manage_sensors {
    meta {
-      shares sensors
+      shares sensors, all_sensors_temperatures
       use module io.picolabs.wrangler alias wrangler
    }
 
@@ -28,24 +28,30 @@ ruleset manage_sensors {
       select when sensor new_sensor
       pre {
          sensor_name = event:attr("sensor_name")
+         threshold = event:attr("threshold")
+         sms_number = event:attr("sms_number")
       }
-      
-      always {
+
+      if ent:sensors >< sensor_name  then
+         noop()
+      notfired {
          raise wrangler event "new_child_request"
-            attributes { "name": sensor_name, "backgroundColor": "#ff69b4" }
+            attributes { "name": sensor_name, "threshold": threshold, "sms_number": sms_number, "backgroundColor": "#ff69b4" }
       }
    }
 
    rule create_child {
       select when wrangler new_child_created
-         foreach ["temperature_store","wovyn_base","sensor_profile","io.picolabs.wovyn.emitter"] setting(rs)
+         foreach ["temperature_store", "twilio","sensor_profile","wovyn_emitter", "wovyn_base"] setting(rs,i)
       
       pre {
          sensor_name = event:attr("name")
          eci = event:attr("eci")
+         threshold = event:attr("threshold")
+         sms_number = event:attr("sms_number")
       }
 
-      if not sensor_name >< ent:sensors then
+      if not (ent:sensors >< sensor_name) then
          event:send(
             { 
               "eci": eci, 
@@ -54,6 +60,9 @@ ruleset manage_sensors {
               "type": "install_ruleset_request",
               "attrs": {
                 "absoluteURL": meta:rulesetURI,
+                "config": {
+
+                },
                 "rid": rs,
               }
             }
@@ -67,24 +76,22 @@ ruleset manage_sensors {
    }
 
    rule update_profile {
-      select when sensor profile_updated
+      select when wrangler new_child_created
+      
       pre {
          eci = event:attr("eci")
-         sensor_name = event:attr("sensor_name")
+         sensor_name = event:attr("name")
          threshold = event:attr("threshold")
          sms_number = event:attr("sms_number")
-
       }
 
       event:send(
          { 
             "eci": eci, 
             "eid": "update-profile",
-            "domain": "wrangler", 
+            "domain": "sensor", 
             "type": "profile_updated",
             "attrs": {
-              "absoluteURL": meta:rulesetURI,
-              "rid": rs,
               "sensor_name": sensor_name,
               "threshold": threshold,
               "sms_number": sms_number
@@ -96,11 +103,11 @@ ruleset manage_sensors {
    rule delete_sensor {
       select when sensor unneeded_sensor
       pre{
-         deleted_sensor_name = event:attr{"sensor_name"}
+         deleted_sensor_name = event:attr("sensor_name")
          exists = ent:sensors >< deleted_sensor_name 
          eci_to_delete = ent:sensors{[deleted_sensor_name,"eci"]}
       }
-      if exists && eci_to_delete then
+      if exists then
         send_directive("deleting_sensor", {"sensor_name":deleted_sensor_name})
       
       fired {
